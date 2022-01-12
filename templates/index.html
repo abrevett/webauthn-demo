@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!-- This script runs an AJAX request to the server that sends login info -->
+		<script>
+			var sendForm = function(){
+				var user = document.querySelector("#user").value;
+				var pass = document.querySelector("#pass").value;
+				var ajaxreq = new XMLHttpRequest();
+				ajaxreq.onreadystatechange = function(){
+					document.querySelector("#authok").innerText = this.responseText;
+				};
+				ajaxreq.open('POST', 'auth', true);
+				ajaxreq.send(JSON.stringify({
+					username: user,
+					password: pass
+				}));
+			};
+		</script>
+	</head>
+	<body>
+		<p>"This is the WebAuthn Demo Landing page."</p>
+		<div id="login-wrapper">
+			<input type="text" id="user" name="user"/>
+			<input type="password" id="pass" name="pass"/>
+			<input type="submit" id="submit" name="submit" onclick="sendForm();"/>
+		</div>
+		<div id="authok"></div>
+	</body>
+</html>

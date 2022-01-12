@@ -1,0 +1,3 @@
+# Ignore everything in the db directory except the BLANK file
+db/*
+!db/BLANK
