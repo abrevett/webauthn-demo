@@ -11,7 +11,7 @@ def index():
 @app.route('/auth', methods=['POST'])
 def auth():
     login = json.loads( request.get_data().decode("utf-8") )
-    log.info( "POST at /auth data: " + login )
+    log.info( "POST at /auth data: " + str(login) )
     # SUPER UNSAFE way to add the username and password to the MongoDB database
     result = db.users.insert_one( login )
     if result != None: return str(result)
