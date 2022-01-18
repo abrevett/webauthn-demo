@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<!-- This script runs an AJAX request to the server that sends login info -->
+		<!-- This script runs AJAX requests to the server to do the login work -->
 		<script src="static/webauth.js"></script>
 	</head>
 	<body>
 		<p>"This is the WebAuthn Demo Landing page."</p>
-		<div id="login-wrapper">
-			<input type="text" id="user" name="user"/>
-			<input type="password" id="pass" name="pass"/>
-			<input type="submit" id="submit" name="submit" onclick="sendForm();"/>
+		<div id="register-wrapper">
+			<input type="email" id="register-email" value="E-mail" required/>
+			<input type="text" id="register-user" value="Username" required/>
+			<input type="submit" id="register-sumbit" value="Register" required/>
 		</div>
-		<div id="authok"></div>
+		<span />
+		<div id="login-wrapper">
+			<input type="email" id="login-email" value="E-mail" required/>
+			<input type="submit" id="login-submit" value="Login" onclick="loginUser();" required/>
+		</div>
+		<div id="auth-ok"></div>
 	</body>
 </html>
