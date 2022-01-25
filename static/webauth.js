@@ -132,7 +132,10 @@ var loginUser = function(){
 		resp = JSON.parse(this.responseText);
 	};
 	ajaxreq.open('POST', 'api/login', true);
-	ajaxreq.send( JSON.stringify(cred) );
+	ajaxreq.send(JSON.stringify({
+		email: email,
+		credential: cred
+	}));
 
 	// Again we display the response from the server
 	document.querySelector("#authok").innerText = resp;
