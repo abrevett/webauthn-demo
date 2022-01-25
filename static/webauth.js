@@ -38,6 +38,7 @@ var registerUser = function(){
 
 	// We must take the response object and properly cast its datatypes
 	// to ArrayBuffer types
+	var id = resp.publicKey.user.id;
 	resp.publicKey.challenge = bufferDecode( resp.publicKey.challenge );
 	resp.publicKey.user.id = bufferDecode( resp.publicKey.user.id );
 	if(resp.publicKey.excludeCredentials) {
@@ -70,7 +71,12 @@ var registerUser = function(){
 		resp = JSON.parse(this.responseText);
 	};
 	ajaxreq.open('POST', 'api/register', true);
-	ajaxreq.send( JSON.stringify(cred) );
+	ajaxreq.send(JSON.stringify({
+		email: email,
+		username: user,
+		id: id,
+		credential: cred
+	}));
 
 	// Now to just print the response just for fun
 	document.querySelector("#authok").innerText = resp;
