@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request
 from pymongo import MongoClient
 import webauthn
-from webauthn.helpers.structs import RegistrationCredential
-from webauthn.helpers.exceptions import InvalidRegistrationResponse
+from webauthn.helpers.structs import RegistrationCredential, AuthenticationCredential
+from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuthenticationResponse
 import os, logging, json, secrets
 
 app = Flask(__name__)
@@ -48,7 +48,7 @@ def auth():
         # We now validate the registration object itself using the WebAuthn helpers
         try:
             valid_obj = webauthn.verify_registration_response(
-                credential = RegistrationCredential.parse_raw(payload['credential']),
+                credential = RegistrationCredential.parse_raw( json.dumps(payload['credential']) ),
                 expected_challenge = webauthn.base64url_to_bytes(
                     webauthn.base64url_to_bytes( db.users.find_one( {"_id": userid} )['challenge'] )
                 ),
@@ -85,8 +85,52 @@ def login():
     payload = json.loads( request.get_data().decode("utf-8") )
     # If I GET to here, check that the username exists, and then send Credential challenge
     if request.method == 'GET':
+        # We first make sure that the email given has an account
+        if db.users.count_documents( {"email": payload['email']} ) <= 0:
+            return { "error":"Email invalid" }
+        # We send a simple authentication response to challenge the suspected user
+        auth_chal = webauthn.generate_authentication_options(rp_id="webauthn.sandbox")
+        # This should be safe, as we will only ever have one user at a time
+        db.users.update_one({"email": payload['email']}, {'$set':{
+            "challenge": base64.urlsafe_b64encode(auth_chal.challenge)
+        }})
+        # Finally, we send off the credential as a JSON object, using the WebAuthn helper
+        return { "publicKey": json.loads(webauthn.options_to_json(auth_chal)) }
     # If I POST to here, verify that the signature is valid and test against stored credential
     if request.method == 'POST':
+        # We get the email and try to verify that the given credential is correct
+        user = db.users.find_one( {"email": payload['email']} )
+        try:
+            auth_verify = webauthn.verify_authentication_response(
+                credential=AuthenticationCredential.parse_raw( json.dumps(payload['credential']) ),
+                expected_challenge=base64url_to_bytes( user['challenge'] ),
+                expected_origin="http://webauthn.sandbox"
+                expected_rp_id="webauthn.sandbox"
+                credential_public_key=base64url_to_bytes( user['credentials']['publicKey'] ),
+                credential_current_sign_count=user['credentials']['sign_in']
+            )
+        except InvalidAuthenticationResponse:
+            # We simply print error and get rid of challenge
+            return { "error":"Login Failed" }
+        else:
+            # We erase the challenge and increment the sign in count
+            db.users.update_one( {"_id": user["_id"]}, {
+                '$set':{
+                    "challenge":""
+                },
+                '$inc':{
+                    "credentials":{ "sign_in": 1 }
+                }
+            })
+            # We must ensure that the sign-in attempt in the database and the one in this thread is the same
+            user = db.users.find_one( {"email": payload['email']} )
+            try:
+                assert user['credentials']['sign_in']==auth_verify.new_sign_count
+            except:
+                return { "error":"Replay attack detected" }
+            else:
+                return { "info":"Auth OK" }
+            return { "error": "Unkown error encountered" }
         #### OLD CODE ####
         #verify = json.loads( request.get_data().decode("utf-8") )
         #log.info( "POST at /api/login: " + str(login) )
