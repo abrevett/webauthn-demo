@@ -7,6 +7,11 @@ import os, logging, json, secrets
 
 app = Flask(__name__)
 
+# These are hardcoded but should be dynamically configured with files
+ORIGIN="http://webauthn.sandbox"
+RELAY_PARTY="webauthn.sandbox"
+COMPANY="WebAuthn Example, LLC"
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -26,8 +31,8 @@ def auth():
         userid = db.users.insert_one( {"email": payload['email'], "username": payload['username']} ).inserted_id
         # We generate simple registration options because this is just a demo
         cred_opts = webauthn.simple_registration_options(
-                rp_id="webauthn.sandbox", # Make sure this is the domain in the browser. Im using webauthn.sandbox
-                rp_name="WebAuthn Example LLC",
+                rp_id=RELAY_PARTY, # Make sure this is the domain in the browser. Im using webauthn.sandbox
+                rp_name=COMPANY,
                 user_id=userid,
                 user_name=payload['email'],
                 user_display_name=payload['username']
@@ -52,8 +57,8 @@ def auth():
                 expected_challenge = webauthn.base64url_to_bytes(
                     webauthn.base64url_to_bytes( db.users.find_one( {"_id": userid} )['challenge'] )
                 ),
-                expected_origin="http://webauthn.sandbox",
-                expected_rp_id="webauthn.sandbox"
+                expected_origin=ORIGIN,
+                expected_rp_id=RELAY_PARTY
             )
         except InvalidRegistrationResponse:
             # We need to clean up the User table of our previous insertion and return an error
@@ -104,8 +109,8 @@ def login():
             auth_verify = webauthn.verify_authentication_response(
                 credential=AuthenticationCredential.parse_raw( json.dumps(payload['credential']) ),
                 expected_challenge=base64url_to_bytes( user['challenge'] ),
-                expected_origin="http://webauthn.sandbox"
-                expected_rp_id="webauthn.sandbox"
+                expected_origin=ORIGIN,
+                expected_rp_id=RELAY_PARTY,
                 credential_public_key=base64url_to_bytes( user['credentials']['publicKey'] ),
                 credential_current_sign_count=user['credentials']['sign_in']
             )
