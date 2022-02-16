@@ -23,7 +23,7 @@ var registerUser = function(){
 	// to ArrayBuffer types
 	var id = resp.publicKey.user.id;
 	resp.publicKey.challenge = bufferDecode( resp.publicKey.challenge );
-	resp.publicKey.challenge = bufferDecode( resp.publicKey.user.id );
+	resp.publicKey.user.id = bufferDecode( resp.publicKey.user.id );
 	if(resp.publicKey.excludeCredentials) {
 		for(var i=0; i<resp.publicKey.excludeCredentials.length; i++){
 			resp.publicKey.excludeCredentials[i].id = bufferDecode( resp.publicKey.excludeCredentials[i].id );
@@ -129,7 +129,11 @@ var loginUser = function(){
  * HELPER FUNCTIONS *
  ********************/
 function bufferDecode(b64str){
-	return Uint8Array.from( atob(b64str), c => c.charCodeAt(0) );
+	var mod4 = b64str.length % 4;
+	concat = (mod4 == 1) ? '=' : (mod4 == 2) ? '==' : '';
+	encstr = b64str.replace("/_/g", "/").replace("/-/g", "+") + concat;
+	console.log(encstr);
+	return Uint8Array.from( atob(encstr), c => c.charCodeAt(0) );
 }
 
 function bufferEncode(buffer){
