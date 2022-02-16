@@ -131,14 +131,14 @@ var loginUser = function(){
 function bufferDecode(b64str){
 	var mod4 = b64str.length % 4;
 	concat = (mod4 == 1) ? '=' : (mod4 == 2) ? '==' : '';
-	encstr = b64str.replace("/_/g", "/").replace("/-/g", "+") + concat;
+	encstr = b64str.replace(/_/g, "/").replace(/-/g, "+") + concat;
 	console.log(encstr);
 	return Uint8Array.from( atob(encstr), c => c.charCodeAt(0) );
 }
 
 function bufferEncode(buffer){
 	return window.btoa(String.fromCharCode.apply(null, buffer))
-		.replace("/\+/g", "-")
-		.replace("/\//g", "_")
-		.replace("/=/g", "");
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=/g, "");
 }
