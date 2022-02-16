@@ -3,7 +3,7 @@ from pymongo import MongoClient
 import webauthn
 from webauthn.helpers.structs import RegistrationCredential, AuthenticationCredential
 from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuthenticationResponse
-import os, logging, json, secrets
+import os, logging, json, secrets, base64
 
 app = Flask(__name__)
 
@@ -30,7 +30,7 @@ def auth():
         if db.users.count_documents( {"username": payload['username']} ) > 0:
             return jsonify({ "error":"Username is already taken" })
         # We are going to use the DB-generated ID as the user ID, but should be something different
-        userid = db.users.insert_one( {"email": payload['email'], "username": payload['username']} ).inserted_id
+        userid = str(db.users.insert_one( {"email": payload['email'], "username": payload['username']} ).inserted_id)
         # We generate simple registration options because this is just a demo
         cred_opts = webauthn.generate_registration_options(
                 rp_id=RELAY_PARTY, # Make sure this is the domain in the browser. Im using webauthn.sandbox
@@ -40,7 +40,9 @@ def auth():
                 user_display_name=payload['username']
         )
         # We also need to temporarily store the generated challenge
-        db.users.update_one( {"_id": userid}, {"challenge": base64.urlsafe_b64encode(cred_opts.challenge)} )
+        log.info( base64.urlsafe_b64encode( cred_opts.challenge ) )
+        log.info( cred_opts.challenge )
+        db.users.update_one( {"_id": userid}, { "$set": {"challenge": base64.urlsafe_b64encode(cred_opts.challenge)}} )
         # Finally, we send off the credential as a JSON object, using the WebAuthn helper
         return jsonify({ "publicKey": json.loads(webauthn.options_to_json(cred_opts)) })
     # If I POST to here, verify that the data returned is valid
@@ -68,8 +70,9 @@ def auth():
             # We need to clean up the User table of our previous insertion and return an error
             return jsonify({ "error": "Registration Failed" })
         else:
-            # If we get a good validation object, we insert the public key and set the sign in count to 0
+            # If we get a good validation object, we delete the challenge, insert the public key, and set the sign in count to 0
             err = db.users.update_one({"_id": userid}, {'$set':{ 
+                'challenge': '',
                 'credentials': {
                     'publicKey': valid_obj.credential_public_key,
                     'sign_in': 0
