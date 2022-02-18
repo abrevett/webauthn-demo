@@ -76,13 +76,8 @@ var loginUser = function(){
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify( {email: email} )
 	}).then(r=>r.json())
-		.then(dat => { resp = dat; })
-		.catch(err => { console.log(err); });
-	if(resp.error !== undefined){
-		console.log(resp.error);
-		return;
-	}
-
+		.then(resp => {
+	
 	// We take our response Object and ensure the correct datatypes
 	resp.publicKey.challenge = bufferDecode( resp.publicKey.challenge );
 	resp.publicKey.allowCredentials.forEach( function(creditem) {
@@ -90,15 +85,10 @@ var loginUser = function(){
 	});
 
 	// We send our object to the TPM to get a coded response
-	var cred = null
 	navigator.credentials.get({
 		publicKey: resp.publicKey
-	}).then( function(new_cred) {
-		cred = new_cred;
-	}).catch( function(err) {
-		console.info(err);
-	});
-
+	}).then( cred => {
+	
 	// We again change the data format for sending to the server
 	cred.rawId = bufferEncode( cred.rawId );
 	cred.response.authenticatorData = bufferEncode( cred.response.authenticatorData );
@@ -107,21 +97,23 @@ var loginUser = function(){
 	cred.response.userHandle = bufferEncode( cred.response.userHandle );
 
 	// And give it to the server to verify our credentials
-	resp = null;
 	fetch('/api/register', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify( {email: email, credential: cred} )
 	}).then(r=>r.json())
-		.then(dat => { resp = dat; })
-		.catch(err => { console.log(err); });
-	if(resp.error !== undefined){
-		console.log(resp.error);
-		return;
-	}
-
+		.then(resp => {
+	
 	// Again we display the response from the server
 	document.querySelector("#auth-ok").innerText = resp;
+	
+		})
+		.catch(err => { console.log(err); });
+	}).catch( err => {
+		console.info(err);
+	});
+		})
+		.catch(err => { console.log(err); });
 };
 
 
