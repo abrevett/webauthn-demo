@@ -8,8 +8,8 @@ import os, logging, json, secrets, base64
 app = Flask(__name__)
 
 # These are hardcoded but should be dynamically configured with files
-ORIGIN="webauthn.sandbox"
-RELAY_PARTY="webauthn.sandbox"
+ORIGIN="webauthn.tk"
+RELAY_PARTY="webauthn.tk"
 COMPANY="WebAuthn Example, LLC"
 
 @app.route('/')
